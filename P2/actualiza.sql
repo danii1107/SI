@@ -66,3 +66,31 @@ $$ LANGUAGE plpgsql;
 
 -- Llamar al procedimiento con un valor específico para initialBalance 
 SELECT setCustomersBalance(200);
+
+-- Crear las tablas adicionales
+CREATE TABLE IF NOT EXISTS movie_countries (
+    countryid SERIAL PRIMARY KEY,
+    countryname VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS movie_genres (
+    genreid SERIAL PRIMARY KEY,
+    genrename VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS movie_languages (
+    languageid SERIAL PRIMARY KEY,
+    languagename VARCHAR(255) NOT NULL
+);
+
+-- Añadir las columnas de clave foránea a la tabla movies
+ALTER TABLE IF EXISTS imdb_movies
+ADD COLUMN IF NOT EXISTS countryid INTEGER REFERENCES movie_countries(countryid),
+ADD COLUMN IF NOT EXISTS genreid INTEGER REFERENCES movie_genres(genreid),
+ADD COLUMN IF NOT EXISTS languageid INTEGER REFERENCES movie_languages(languageid);
+
+-- Eliminar las columnas antiguas multivaluadas
+ALTER TABLE IF EXISTS imdb_movies
+DROP COLUMN IF EXISTS moviecountries,
+DROP COLUMN IF EXISTS moviegenres,
+DROP COLUMN IF EXISTS movielanguages;
