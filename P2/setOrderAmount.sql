@@ -14,7 +14,7 @@ BEGIN
     -- Procedimiento que completa las columnas netamount y totalamount
     -- de la tabla orders
 	UPDATE orders
-	SET netamount = oprice.finalprice, totalamount = ROUND (oprice.finalprice + (oprice.finalprice * (tax/100)), 2)
+	SET netamount = oprice.finalprice, totalamount = ROUND (oprice.finalprice + (oprice.finalprice * (orders.tax/100)), 2)
     FROM OrderPrice oprice
     WHERE orders.orderid = oprice.orderid;
 
