@@ -31,11 +31,11 @@ REFERENCES products("prod_id");
 ALTER TABLE customers
 ADD COLUMN balance DECIMAL(10, 2);  
 
-CREATE TABLE ratings (
+UPDATE TABLE ratings (
     ratingid SERIAL PRIMARY KEY,
     customerid INTEGER REFERENCES customers("customerid"),
     movieid INTEGER REFERENCES imdb_movies("movieid"),
-    rating INTEGER,
+    rating DECIMAL(3, 1),
     -- Asegurarse de que un usuario no pueda valorar dos veces la misma película
     CONSTRAINT unique_user_movie_rating UNIQUE ("customerid", "movieid")
 );

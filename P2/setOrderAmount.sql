@@ -25,3 +25,4 @@ $$ LANGUAGE plpgsql;
 
 -- Invocación al procedimiento
 SELECT setOrderAmount();
+SELECT * FROM orders LIMIT 100
