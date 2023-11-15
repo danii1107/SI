@@ -31,9 +31,3 @@ EXECUTE PROCEDURE updOrders();
 UPDATE orderdetail SET price = 33 WHERE orderid = 99997;
 
 SELECT * FROM orders o WHERE o.orderid = 99997;
-
-SELECT * FROM orderdetail od WHERE od.orderid = od.prod_id;
-
-
-DELETE FROM orderdetail od WHERE od.orderid = od.prod_id AND od.orderid = 990990;
-
