@@ -20,7 +20,7 @@ BEGIN
     RETURN NULL;
 END;
     $$ 
-LANGUAGE 'plpgsql';
+LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER updOrders
 AFTER DELETE OR INSERT OR UPDATE ON orderdetail
