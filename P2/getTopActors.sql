@@ -56,5 +56,5 @@ JOIN
 JOIN 
     imdb_moviegenres ON imdb_movies.movieid = imdb_moviegenres.movieid
 WHERE 
-    imdb_actors.actorname = 'Jackson, Samuel L.'
+    imdb_actors.actorname = 'Lee, Spike'
     AND imdb_moviegenres.genre = 'Drama';
