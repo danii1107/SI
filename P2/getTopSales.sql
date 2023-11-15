@@ -6,7 +6,7 @@ DECLARE
     tupla RECORD;
 BEGIN
     CREATE TEMPORARY TABLE ventas AS
-        (SELECT movieid, sum(q.salesperyear) AS salesperyear,
+        (SELECT mzovieid, sum(q.salesperyear) AS salesperyear,
             q.yearofsale
         FROM (SELECT od.prod_id, sum(quantity) AS salesperyear,
                 extract(YEAR FROM orderdate) AS yearOfSale
@@ -43,5 +43,3 @@ LANGUAGE plpgsql;
 
 -- Invocación al procedimiento
 SELECT * FROM getTopSales(2020, 2021);
-
-

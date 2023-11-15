@@ -2,16 +2,26 @@ CREATE OR REPLACE FUNCTION setOrderAmount()
 RETURNS VOID
 AS $$
 BEGIN
-    UPDATE orders
-    SET netamount = round(q.neto, 2),
-        totalamount = round(q.neto * (1 + tax/100), 2)
-    FROM (SELECT orderid, sum(price * quantity) as neto
-            FROM orderdetail
-            GROUP BY orderid) as q
-    WHERE orders.orderid = q.orderid and netamount IS NULL;
-END; $$
-LANGUAGE plpgsql;
+    -- Creamos una view para obtener la suma de los precios de la
+    -- película del pedido
+    CREATE OR REPLACE VIEW OrderPrice AS
+    SELECT
+        orderid, SUM(price * quantity) as finalprice
+    FROM
+        orderdetail
+    GROUP BY
+        orderid
+    ;
+
+    -- Procedimiento que completa las columnas netamount y totalamount
+    -- de la tabla orders
+	UPDATE orders
+	SET netamount = oprice.finalprice, totalamount = ROUND (oprice.finalprice + (oprice.finalprice * (orders.tax/100)), 2)
+    FROM OrderPrice oprice
+    WHERE orders.orderid = oprice.orderid;
+
+END;
+$$ LANGUAGE plpgsql;
 
 -- Invocación al procedimiento
 SELECT setOrderAmount();
-SELECT * FROM orders LIMIT 100
