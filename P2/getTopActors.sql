@@ -1,49 +1,48 @@
-CREATE OR REPLACE FUNCTION getTopActors(genre CHAR, 
-	OUT Actor char, OUT Num INT, OUT Debut INT, OUT Film CHAR, OUT Director CHAR)
+CREATE OR REPLACE FUNCTION getTopActors(genre CHAR, OUT Actor CHAR,
+    OUT Num INT, OUT Debut INT, OUT Film CHAR, OUT Director CHAR)
 RETURNS SETOF RECORD
 AS $$
 DECLARE
-	tupla RECORD;
+    tupla RECORD;
 BEGIN
-	CREATE TEMPORARY TABLE genreMovies
-	AS (SELECT movieid, movietitle, year
-		FROM imdb_moviegenres as mg NATURAL JOIN imdb_movies
-		WHERE mg.genre LIKE $1);
-	CREATE TEMPORARY TABLE actorsGenreDebut
-	AS (SELECT actorid, actorname, count(actorid) as genreMovies,
-		min(year) as genreDebut
-		FROM genreMovies NATURAL JOIN
-			imdb_actormovies NATURAL JOIN
-			imdb_actors
-		GROUP BY actorid, actorname
-		HAVING count(actorid) > 4);
-	CREATE TEMPORARY TABLE topActors
-	AS (SELECT q.actorname, q.genreMovies, q.genreDebut,
-		q.movietitle, directorname
-		FROM (SELECT q.actorname, q.genreMovies, q.genreDebut,
-                m.movieid, m.movietitle
-                FROM actorsGenreDebut as q NATURAL JOIN
-    			imdb_actormovies NATURAL JOIN
-	    		genreMovies as m
-        		WHERE q.genreDebut = m.year) as q NATURAL JOIN
-            imdb_directormovies NATURAL JOIN imdb_directors
-		ORDER BY q.genreMovies DESC);
-	FOR tupla IN SELECT * FROM topActors LOOP
-		Actor := tupla.actorName;
-		Num := tupla.genreMovies;
-		Debut := tupla.genreDebut;
-		Film := tupla.movieTitle;
-		Director := tupla.directorName;
-		RETURN NEXT;
-	END LOOP;
-	DROP TABLE genreMovies;
-	DROP TABLE actorsGenreDebut;
-	DROP TABLE topActors;
-	RETURN;
-END; $$
-LANGUAGE plpgsql;
+    CREATE TEMPORARY TABLE RESULT
+    AS (SELECT q.actorname, q.genremovies, q.genredebut,
+            m.movietitle, d.directorname
+        FROM (
+            SELECT a.actorid, a.actorname, COUNT(a.actorid) AS genremovies,
+                MIN(m.year) AS genredebut
+            FROM imdb_moviegenres AS g
+            JOIN imdb_movies AS m ON m.movieid = g.movieid
+            JOIN imdb_actormovies AS am ON am.movieid = m.movieid
+            JOIN imdb_actors AS a ON a.actorid = am.actorid
+            WHERE g.genre LIKE $1
+            GROUP BY a.actorid, a.actorname
+            HAVING COUNT(a.actorid) > 4
+        ) AS q
+        JOIN imdb_actormovies AS am ON am.actorid = q.actorid
+        JOIN imdb_movies AS m ON q.genredebut = m.year AND am.movieid = m.movieid
+        JOIN imdb_directormovies AS dm ON dm.movieid = m.movieid
+        JOIN imdb_directors AS d ON d.directorid = dm.directorid
+        ORDER BY q.genremovies DESC);
+
+    FOR tupla IN SELECT * FROM RESULT LOOP
+        Actor := tupla.actorname;
+        Num := tupla.genremovies;
+        Debut := tupla.genredebut;
+        Film := tupla.movietitle;
+        Director := tupla.directorname;
+        RETURN NEXT;
+    END LOOP;
+
+    DROP TABLE RESULT;
+END;
+$$ LANGUAGE plpgsql;
+
 
 SELECT * FROM getTopActors('Drama')
+
+DROP FUNCTION IF EXISTS getTopActors(CHAR);
+
 
 SELECT 
     imdb_actors.actorname
