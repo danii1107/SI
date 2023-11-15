@@ -42,4 +42,4 @@ END; $$
 LANGUAGE plpgsql;
 
 -- Invocación al procedimiento
-SELECT * FROM getTopSales(2019, 2021);
+SELECT * FROM getTopSales(2020, 2021);
