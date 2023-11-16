@@ -25,3 +25,10 @@ DROP INDEX IF EXISTS idx_customers_customerid_country;
 CREATE INDEX idx_customers_customerid_country 
 ON public.customers(customerid, country);
 
+-- Borra el índice si ya existe
+DROP INDEX IF EXISTS idx_customers_country;
+
+-- Crea un nuevo índice en country
+CREATE INDEX idx_customers_country 
+ON public.customers(country);
+
