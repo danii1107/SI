@@ -31,7 +31,7 @@ REFERENCES products("prod_id");
 ALTER TABLE customers
 ADD COLUMN balance DECIMAL(10, 2);  
 
-UPDATE TABLE ratings (
+CREATE TABLE ratings (
     ratingid SERIAL PRIMARY KEY,
     customerid INTEGER REFERENCES customers("customerid"),
     movieid INTEGER REFERENCES imdb_movies("movieid"),

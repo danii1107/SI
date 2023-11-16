@@ -19,7 +19,7 @@ BEGIN
 	SET netamount = oprice.finalprice, totalamount = ROUND (oprice.finalprice + (oprice.finalprice * (orders.tax/100)), 2)
     FROM OrderPrice oprice
     WHERE orders.orderid = oprice.orderid;
-
+    DROP VIEW IF EXISTS OrderPrice;
 END;
 $$ LANGUAGE plpgsql;
 
