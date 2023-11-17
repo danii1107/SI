@@ -1,9 +1,3 @@
-SELECT COUNT(DISTINCT c.state) AS estados_distintos
-FROM public.customers c
-JOIN public.orders o ON c.customerid = o.customerid
-WHERE EXTRACT(YEAR FROM o.orderdate) = 2017
-AND c.country = 'Peru';
-
 EXPLAIN
 SELECT COUNT(DISTINCT c.state) AS estados_distintos
 FROM public.customers c
