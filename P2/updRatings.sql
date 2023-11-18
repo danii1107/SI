@@ -35,5 +35,3 @@ VALUES (13, 10.0, 4, 100);
 INSERT INTO imdb_movies (movieid, movietitle, movierelease,
 	movietype, year, issuspended, ratingmean, ratingcount)
 VALUES (101, 'wow', 'ayer', 1, 2010, 0, 0.01, 1);
-
-
