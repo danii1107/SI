@@ -94,4 +94,3 @@ ALTER TABLE IF EXISTS imdb_movies
 DROP COLUMN IF EXISTS moviecountries,
 DROP COLUMN IF EXISTS moviegenres,
 DROP COLUMN IF EXISTS movielanguages;
-
