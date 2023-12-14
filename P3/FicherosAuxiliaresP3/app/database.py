@@ -27,134 +27,57 @@ def dbConnect():
 def dbCloseConnect(db_conn):
     db_conn.close()
   
-def delState(state, bFallo, bCommit):
-    dbr = []
-    db_conn = None
-    try:
-        db_conn = dbConnect()
-        db_trans = db_conn.begin()
+def delCity(city, bFallo, bSQL, duerme, bCommit):
+	dbr=[]
+	
+	db_conn = db_engine.connect()
+	
+	try:
+		if bSQL:
+			dbr.append("Se ejecuta a traves de SQL")
+			result = db_conn.execute("BEGIN;")
+			dbr.append("BEGIN")
+			result = db_conn.execute("delete from orderdetail where exists orderid in (select orderid from orders where exists customerid in (select customerid from customers where city = "+city+")")
+			dbr.append("Se borrarán los datos de los pedidos del cliente de la ciudad: "+city)
+			
+			if bCommit:
+				result = db_conn.execute("COMMIT;")
+				dbr.append("Commit intermedio. Se inicia otra transaccion")
+				result = db_conn.execute("BEGIN;")
+			if not bFallo:
+				result = db_conn.execute("delete from orders where exists customerid in (select custormeid from custormers where city ="+city+")")
+				dbr.append("Se borrarán los pedidos del cliente de la ciudad: "+city)
+			result = db_conn.execute("delete from customers where city ="+city)
+			dbr.append("Se borrará el cliente de la ciudad indicada")
+			result = db_conn.execute("COMMIT;")
+			dbr.append("Transaccion finalizada correctamente.")
+		else:
+			dbr.append("Se ejecuta a traves de SQL ALCHEMY")
+			alchemy = db_conn.begin()
+			dbr.append("BEGIN")
+			result = db_conn.execute("delete from orderdetail where exists orderid in (select orderid from orders where exists customerid in (select customerid from customers where city = "+city+")")			
+			dbr.append("Datos de los pedidos del cliente de la ciudad "+city+" borrados.")
+			
+			if bCommit:
+				alchemy.commit()
+				dbr.append("Commit intermedio. Se inicia otra transaccion")
+				alchemy = db_conn.begin()
+			if not bFallo:
+				result = db_conn.execute("delete from orders where exists customerid in (select custormeid from custormers where city ="+city+")")
+				dbr.append("Pedidos del cliente de la ciudad "+city+" borrados.")
+			result = db_conn.execute("delete from customers where ccity ="+city)
+			dbr.append("Cliente borrado")
+			alchemy.commit()
+			dbr.append("Transaccion finalizada correctamente.")
 
-        # Borrado de información asociada al cliente en orden inverso para evitar conflictos
-        # Borrar pedidos con su detalle
-        db_conn.execute(text("DELETE FROM orderdetail WHERE orderid IN "
-                             "(SELECT orderid FROM orders WHERE customerid IN "
-                             "(SELECT customerid FROM customers WHERE city = :city))"), city=state)
+	except Exception as e:
+		dbr.append("Error en la transaccion. Haciendo rollback.")
+		if bSQL:
+			result = db_conn.execute("rollback;")
+		else:
+			alchemy.rollback()
+			
+	dbr.append("Cerramos la conexión con la base de datos.")
+	db_conn.close()
 
-        # Borrar historial
-        db_conn.execute(text("DELETE FROM historial WHERE customerid IN "
-                             "(SELECT customerid FROM customers WHERE city = :city)"), city=state)
-
-        # Borrar carrito
-        db_conn.execute(text("DELETE FROM carrito WHERE customerid IN "
-                             "(SELECT customerid FROM customers WHERE city = :city)"), city=state)
-
-        # Borrar clientes de la ciudad especificada
-        db_conn.execute(text("DELETE FROM customers WHERE city = :city"), city=state)
-
-        if bCommit:
-            db_conn.execute("COMMIT")
-
-        if bFallo:
-            raise Exception("Simulación de un error durante la eliminación")
-
-        db_trans.commit()
-        dbr.append("Cambios confirmados exitosamente")
-
-    except Exception as e:
-        if db_trans:
-            db_trans.rollback()
-        dbr.append(f"Error: {str(e)}")
-    finally:
-        if db_conn:
-            dbCloseConnect(db_conn)
-
-    return dbr
-
-def delStateIncorrectOrder(state, bFallo, bCommit):
-    dbr = []
-    db_conn = None
-    try:
-        db_conn = dbConnect()
-        db_trans = db_conn.begin()
-
-        db_conn.execute(text("DELETE FROM carrito WHERE customerid IN "
-                             "(SELECT customerid FROM customers WHERE city = :city)"), city=state)
-
-        # Otras operaciones de borrado en un orden incorrecto
-        # ...
-
-        if bCommit:
-            db_conn.execute("COMMIT")
-
-        if bFallo:
-            raise Exception("Simulación de un error durante la eliminación")
-
-        db_trans.commit()
-        dbr.append("Cambios confirmados exitosamente")
-
-    except Exception as e:
-        if db_trans:
-            db_trans.rollback()
-        dbr.append(f"Error: {str(e)}")
-    finally:
-        if db_conn:
-            dbCloseConnect(db_conn)
-
-    return dbr
-
-def delStateCorrectOrder(state, bFallo, bCommit):
-    dbr = []
-    db_conn = None
-    try:
-        db_conn = dbConnect()
-        db_trans = db_conn.begin()
-
-        db_conn.execute(text("DELETE FROM historial WHERE customerid IN "
-                             "(SELECT customerid FROM customers WHERE city = :city)"), city=state)
-
-        # Otras operaciones de borrado en un orden correcto
-        # ...
-
-        if bCommit:
-            db_conn.execute("COMMIT")
-
-        if bFallo:
-            raise Exception("Simulación de un error durante la eliminación")
-
-        db_trans.commit()
-        dbr.append("Cambios confirmados exitosamente")
-
-    except Exception as e:
-        if db_trans:
-            db_trans.rollback()
-        dbr.append(f"Error: {str(e)}")
-    finally:
-        if db_conn:
-            dbCloseConnect(db_conn)
-
-    return dbr
-
-def showDataBeforeDeletion(state):
-    db_conn = None
-    try:
-        db_conn = dbConnect()
-
-        # Consulta para obtener datos antes del borrado
-        query = text("SELECT * FROM customers WHERE city = :city")
-        result = db_conn.execute(query.params(city=state))
-        customers_data = result.fetchall()
-
-        # Mostrar los datos de los clientes antes del borrado
-        print("Datos de los clientes a borrar:")
-        for row in customers_data:
-            print(row)  # Aquí puedes imprimir o procesar los datos según sea necesario
-
-        # Consultas para otras tablas asociadas (carrito, historial, orderdetail)
-        # ...
-
-    except Exception as e:
-        print(f"Error al obtener los datos antes del borrado: {str(e)}")
-    finally:
-        if db_conn:
-            dbCloseConnect(db_conn)
-
+	return dbr
