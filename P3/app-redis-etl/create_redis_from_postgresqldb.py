@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, MetaData, Table, select
 
 # Conexión a la base de datos PostgreSQL
 print("Conectando a la base de datos PostgreSQL...")
-db_url = 'postgresql://alumnodb:1234@localhost/si1p3'
+db_url = 'postgresql://alumnodb:1234@localhost/si1'
 engine = create_engine(db_url)
 connection = engine.connect()
 
