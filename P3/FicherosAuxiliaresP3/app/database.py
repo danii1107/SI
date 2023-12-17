@@ -7,77 +7,84 @@ from sqlalchemy import create_engine, text
 from pymongo import MongoClient
 
 # configurar el motor de sqlalchemy
-db_engine = create_engine("postgresql://alumnodb:1234@localhost/si1p3", echo=False, execution_options={"autocommit":False})
+db_engine = create_engine("postgresql://alumnodb:1234@localhost/si1", echo=False, execution_options={"autocommit":False})
 
 # Crea la conexión con MongoDB
 mongo_client = MongoClient()
 
 def getMongoCollection(mongoDB_client):
-    mongo_db = mongoDB_client.si1p3
+    mongo_db = mongoDB_client.si1
     return mongo_db.topUK
 
 def mongoDBCloseConnect(mongoDB_client):
-    mongoDB_client.close();
+    mongoDB_client.close()
 
 def dbConnect():
-    db_conn = db_engine.connect()
-    print("Conexión establecida con la base de datos.")
-    return db_conn
+    return db_engine.connect()
 
 def dbCloseConnect(db_conn):
     db_conn.close()
   
-def delCity(city, bFallo, bSQL, duerme, bCommit):
-	dbr=[]
-	
-	db_conn = db_engine.connect()
-	
-	try:
-		if bSQL:
-			dbr.append("Se ejecuta a traves de SQL")
-			result = db_conn.execute("BEGIN;")
-			dbr.append("BEGIN")
-			result = db_conn.execute("delete from orderdetail where exists orderid in (select orderid from orders where exists customerid in (select customerid from customers where city = "+city+")")
-			dbr.append("Se borrarán los datos de los pedidos del cliente de la ciudad: "+city)
-			
-			if bCommit:
-				result = db_conn.execute("COMMIT;")
-				dbr.append("Commit intermedio. Se inicia otra transaccion")
-				result = db_conn.execute("BEGIN;")
-			if not bFallo:
-				result = db_conn.execute("delete from orders where exists customerid in (select custormeid from custormers where city ="+city+")")
-				dbr.append("Se borrarán los pedidos del cliente de la ciudad: "+city)
-			result = db_conn.execute("delete from customers where city ="+city)
-			dbr.append("Se borrará el cliente de la ciudad indicada")
-			result = db_conn.execute("COMMIT;")
-			dbr.append("Transaccion finalizada correctamente.")
-		else:
-			dbr.append("Se ejecuta a traves de SQL ALCHEMY")
-			alchemy = db_conn.begin()
-			dbr.append("BEGIN")
-			result = db_conn.execute("delete from orderdetail where exists orderid in (select orderid from orders where exists customerid in (select customerid from customers where city = "+city+")")			
-			dbr.append("Datos de los pedidos del cliente de la ciudad "+city+" borrados.")
-			
-			if bCommit:
-				alchemy.commit()
-				dbr.append("Commit intermedio. Se inicia otra transaccion")
-				alchemy = db_conn.begin()
-			if not bFallo:
-				result = db_conn.execute("delete from orders where exists customerid in (select custormeid from custormers where city ="+city+")")
-				dbr.append("Pedidos del cliente de la ciudad "+city+" borrados.")
-			result = db_conn.execute("delete from customers where ccity ="+city)
-			dbr.append("Cliente borrado")
-			alchemy.commit()
-			dbr.append("Transaccion finalizada correctamente.")
+def delState(state, bFallo, bSQL, duerme, bCommit):
+    # Array de trazas a mostrar en la página
+    dbr=[]
 
-	except Exception as e:
-		dbr.append("Error en la transaccion. Haciendo rollback.")
-		if bSQL:
-			result = db_conn.execute("rollback;")
-		else:
-			alchemy.rollback()
-			
-	dbr.append("Cerramos la conexión con la base de datos.")
-	db_conn.close()
+    # TODO: Ejecutar consultas de borrado
+    # - ordenar consultas según se desee provocar un error (bFallo True) o no
+    # - ejecutar commit intermedio si bCommit es True
+    # - usar sentencias SQL ('BEGIN', 'COMMIT', ...) si bSQL es True
+    # - suspender la ejecución 'duerme' segundos en el punto adecuado para forzar deadlock
+    # - ir guardando trazas mediante dbr.append()
+    
+    conn = dbConnect()
+    
+    try:
+        # Begin transaction
+        if bSQL:
+            conn.execute("BEGIN")
 
-	return dbr
+        # Select customers from the given city
+        stmt = text("SELECT customerid FROM customers WHERE city = :city")
+        customers = conn.execute(stmt, city=state)
+        # If no customers are found, no action is taken
+        if not customers:
+            dbr.append("No customers found in the specified city.")
+            if bSQL:
+                conn.execute("COMMIT")
+            return dbr
+
+        customer_ids = [c['customerid'] for c in customers]
+
+        # Delete orders and order details
+        stmt = text("DELETE FROM orderdetail WHERE orderid IN (SELECT orderid FROM orders WHERE customerid = ANY(:customer_ids))")
+        conn.execute(stmt, customer_ids=customer_ids)
+        stmt = text("DELETE FROM orders WHERE customerid = ANY(:customer_ids)")
+        conn.execute(stmt, customer_ids=customer_ids)
+
+        # If bFallo is True, attempt to delete customers before deleting their orders, which should cause an error due to foreign key constraints
+        if bFallo:
+            stmt = text("DELETE FROM customers WHERE customerid = ANY(:customer_ids)")
+            conn.execute(stmt, customer_ids=customer_ids)
+        # Intermediate commit if bCommit is True
+        if bCommit:
+            conn.execute("COMMIT")
+            time.sleep(duerme)  # Sleep to simulate delay or deadlock
+            if bSQL:
+                conn.execute("BEGIN")
+
+        # Final commit if no error occurred
+        if not bFallo:
+            conn.execute("COMMIT")
+            dbr.append("All associated records with customers from the city have been deleted.")
+
+    except Exception as e:
+        # Rollback in case of error
+        conn.execute("ROLLBACK")
+        dbr.append(f"Transaction failed: {str(e)}. Rollback executed.")
+
+    finally:
+        # Close the database connection
+        dbCloseConnect(conn)
+
+    return dbr
+
